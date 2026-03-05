@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Historical Data - Smart Pan</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="chat-style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">← BACK TO MONITOR</a>
+        
+        <div class="header">
+            <h2>Sensor Statistics</h2>
+            <p>keep the statistics of the the newest 50 data points</p>
+        </div>
+
+        <div class="chart-wrapper">
+            <canvas id="iotChart"></canvas>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="chat-logic.js"></script>
+</body>
+</html>

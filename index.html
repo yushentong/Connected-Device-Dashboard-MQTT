@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Pan Monitor</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+</head>
+
+<body>
+    <div id="ui-container">
+        <div class="time-display" id="current-time">00:00</div>
+
+        <div class="data-section">
+            <p class="label">TEMPERATURE</p>
+            <h1 class="value"><span id="temp-display">--</span>°C</h1>
+        </div>
+
+        <div class="data-section">
+            <p class="label">HUMIDITY</p>
+            <h1 class="value"><span id="hum-display">--</span>% rH</h1>
+        </div>
+
+        <a href="chart.html" id="chart-entrance">
+            <div class="icon-circle">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="currentColor"
+                        d="M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z" />
+                </svg>
+            </div>
+            <span>VIEW DATA</span>
+        </a>
+    </div>
+
+    <div id="alarm-status">🚨</div>
+    <div id="pan-container">
+        <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+        <script src="sketch.js"></script>
+    </div>
+
+
+</body>
+
+</html>
