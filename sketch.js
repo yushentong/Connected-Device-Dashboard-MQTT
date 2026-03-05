@@ -74,6 +74,11 @@ mqttClient.on('message', (t, payload) => {
     // update UI text
     document.getElementById('temp-display').innerText = temp.toFixed(1);
     document.getElementById('hum-display').innerText = humidity.toFixed(0);
+  
+    // show last received time
+    const now = new Date();
+    const t2 = now.toLocaleTimeString('en-GB'); // HH:MM:SS
+    document.getElementById('last-update').innerText = 'LAST UPDATE: ' + t2;
   } catch (e) {
     console.error('Bad MQTT payload:', payload.toString());
   }

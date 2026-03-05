@@ -132,6 +132,8 @@ function startMqtt() {
 
       if (Number.isFinite(t) && Number.isFinite(h)) {
         pushPoint(t, h);
+        const now = new Date();
+        document.getElementById('last-update').innerText = 'LAST UPDATE: ' + now.toLocaleTimeString('en-GB');
       }
     } catch (e) {
       console.error('Bad MQTT payload:', payload.toString());
