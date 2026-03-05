@@ -77,8 +77,7 @@ mqttClient.on('message', (t, payload) => {
 
     // show last received time
     const now = new Date();
-    const t2 = now.toLocaleTimeString('en-GB'); // HH:MM:SS
-    document.getElementById('last-update').innerText = 'LAST UPDATE: ' + t2;
+    document.getElementById('last-update').innerText = 'LAST UPDATE: ' + now.toLocaleTimeString('en-GB');
   } catch (e) {
     console.error('Bad MQTT payload:', payload.toString());
   }
