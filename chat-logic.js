@@ -1,7 +1,7 @@
 const ctx = document.getElementById('iotChart').getContext('2d');
 
 const MAX_POINTS = 50;
-const API_URL = 'https://34.9.117.62:3000/latest';
+const API_URL = "https://api.shentongcreates.com/latest";
 
 let labels = [];
 let tempData = [];
