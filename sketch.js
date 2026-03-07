@@ -1,11 +1,9 @@
 let temp = 0;
 let humidity = 0;
 let glowAlpha = 0;
-let startTime = 0;
 
 const thresholdTemp = 40;
 const thresholdHumidity = 25;
-const alertDelay = 3000;
 
 const API_URL = "https://api.shentongcreates.com/latest";
 const OFFLINE_THRESHOLD_MS = 90 * 1000; // 1.5 minutes
@@ -23,19 +21,11 @@ function draw() {
     clear();
     updateTime();
 
-    if (temp > thresholdTemp && humidity < thresholdHumidity) {
+    if (temp >= thresholdTemp && humidity <= thresholdHumidity) {
         glowAlpha = 255;
-
-        if (startTime === 0) {
-            startTime = millis();
-        }
-
-        if (millis() - startTime > alertDelay) {
-            setAlarmState(true);
-        }
+        setAlarmState(true);
     } else {
         glowAlpha = 0;
-        startTime = 0;
         setAlarmState(false);
     }
 
