@@ -13,8 +13,7 @@
 
 Adafruit_SHTC3 shtc3 = Adafruit_SHTC3();
 
-// Use SSL client for secure MQTT (port 8883)
-WiFiClient wifi; 
+WiFiClient wifi;
 MqttClient mqttClient(wifi);
 
 char broker[] = "tigoe.net";
@@ -24,77 +23,166 @@ const char topic[] = "shentong/shtc3";
 // Device name
 String deviceName = "SHTC3";
 
-// Message sending interval (ms)
+// Interval between messages (milliseconds)
 int interval = 10000;
 unsigned long lastSend = 0;
+
+
+// Wifi Fall back
+
+// Try connecting to a specific WiFi network
+bool tryWiFi(const char* ssid, const char* pass, int maxAttempts = 5) {
+
+  Serial.print("Trying WiFi: ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, pass);
+
+  int attempts = 0;
+
+  // Wait until connected or max attempts reached
+  while (WiFi.status() != WL_CONNECTED && attempts < maxAttempts) {
+    delay(1000);
+    Serial.print(".");
+    attempts++;
+  }
+
+  Serial.println();
+
+  // Check if connection succeeded
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("Connected to: ");
+    Serial.println(ssid);
+
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
+
+    return true;
+  }
+
+  Serial.print("Failed to connect to: ");
+  Serial.println(ssid);
+
+  return false;
+}
+
+
+// Attempt to connect to primary WiFi first, then fallback WiFi
+bool connectToWiFi() {
+
+  // Disconnect previous connection to avoid state conflicts
+  WiFi.end();
+
+  // Try primary WiFi
+  if (tryWiFi(SECRET_SSID, SECRET_PASS)) {
+    return true;
+  }
+
+  delay(1000);
+
+  // Try backup WiFi
+  if (tryWiFi(SECRET_SSID_2, SECRET_PASS_2)) {
+    return true;
+  }
+
+  Serial.println("Failed to connect to any WiFi network.");
+
+  return false;
+}
+
 
 void setup() {
 
   Serial.begin(115200);
 
+  // Initialize SHTC3 sensor
   if (!shtc3.begin()) {
     Serial.println("Couldn't find SHTC3");
     while (1);
   }
+
   Serial.println("Found SHTC3 sensor");
 
-  // Connect to WiFi
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print("Connecting to SSID: ");
-    Serial.println(SECRET_SSID);
-    WiFi.begin(SECRET_SSID, SECRET_PASS);
-    delay(2000);
+
+  // Connect to WiFi with fallback support
+  while (!connectToWiFi()) {
+    Serial.println("Retrying both WiFi networks in 5 seconds...");
+    delay(5000);
   }
 
-  Serial.println("Connected to WiFi");
-  Serial.print("IP: ");
-  Serial.println(WiFi.localIP());
 
-  // Set MQTT client ID (must be unique)
+  // Generate a unique MQTT client ID using MAC address
   String clientID = "SHTC3Client-";
+
   byte mac[6];
   WiFi.macAddress(mac);
+
   for (int i = 0; i < 3; i++) {
     clientID += String(mac[i], HEX);
   }
 
   mqttClient.setId(clientID);
+
   mqttClient.setUsernamePassword(SECRET_MQTT_USER, SECRET_MQTT_PASS);
 
   pinMode(2, OUTPUT);
 }
 
+
 void loop() {
 
-  // If not connected to broker, try to reconnect
-  if (!mqttClient.connected()) {
-    Serial.println("Connecting to MQTT broker...");
-    if (!connectToBroker()) return;   
+  // Reconnect WiFi if connection drops
+  if (WiFi.status() != WL_CONNECTED) {
+
+    Serial.println("WiFi disconnected. Reconnecting...");
+
+    while (!connectToWiFi()) {
+      Serial.println("Retrying WiFi in 5 seconds...");
+      delay(5000);
+    }
   }
 
-  // Send sensor data at interval
+
+  // If MQTT is not connected, attempt reconnection
+  if (!mqttClient.connected()) {
+
+    Serial.println("Connecting to MQTT broker...");
+
+    if (!connectToBroker()) {
+      delay(2000);
+      return;
+    }
+  }
+
+
+  // Send sensor data at specified interval
   if (millis() - lastSend > interval) {
 
     sensors_event_t humidity, temp;
+
     shtc3.getEvent(&humidity, &temp);
 
     float t = temp.temperature;
     float h = humidity.relative_humidity;
 
-    // LED threshold logic
+
+    // LED threshold condition
     if (t >= 40.0 && h <= 25.0) {
       digitalWrite(2, HIGH);
     } else {
       digitalWrite(2, LOW);
     }
 
-    // Build JSON payload
+
+    // Construct JSON payload
     String message = "{\"device\":\"DEVICE\",\"temperature\":TEMP,\"humidity\":HUMID}";
+
     message.replace("DEVICE", deviceName);
     message.replace("TEMP", String(t));
     message.replace("HUMID", String(h));
 
-    // Publish message
+
+    // Publish MQTT message
     mqttClient.beginMessage(topic);
     mqttClient.print(message);
     mqttClient.endMessage();
@@ -106,16 +194,19 @@ void loop() {
   }
 }
 
+
 boolean connectToBroker() {
-  // if the MQTT client is not connected:
+
+  // Attempt MQTT connection
   if (!mqttClient.connect(broker, port)) {
-    // print out the error message:
-    Serial.print("MOTT connection failed. Error no: ");
+
+    Serial.print("MQTT connection failed. Error no: ");
     Serial.println(mqttClient.connectError());
-    // return that you're not connected:
+
     return false;
   }
-  // once you're connected, you
-  // return that you're connected:
+
+  Serial.println("Connected to MQTT broker.");
+
   return true;
 }

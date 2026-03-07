@@ -36,7 +36,15 @@ let chart = new Chart(ctx, {
       legend: { position: 'top' }
     },
     scales: {
-      y: { beginAtZero: true }
+      x: {
+        ticks: {
+          maxRotation: 45,
+          minRotation: 45
+        }
+      },
+      y: {
+        beginAtZero: true
+      }
     }
   }
 });
@@ -50,7 +58,7 @@ async function loadHistoryFromVM() {
     tempData.length = 0;
     humData.length = 0;
 
-    let counter = 1;
+    let lastValidTimestamp = null;
 
     for (const item of items) {
       let payload;
@@ -68,16 +76,35 @@ async function loadHistoryFromVM() {
         continue;
       }
 
-      labels.push('#' + counter++);
+      const timeLabel = item.timestamp
+        ? new Date(item.timestamp).toLocaleTimeString('en-GB')
+        : '--:--:--';
+
+      labels.push(timeLabel);
       tempData.push(t);
       humData.push(h);
+
+      if (item.timestamp) {
+        lastValidTimestamp = item.timestamp;
+      }
+    }
+
+    if (labels.length > MAX_POINTS) {
+      labels.splice(0, labels.length - MAX_POINTS);
+      tempData.splice(0, tempData.length - MAX_POINTS);
+      humData.splice(0, humData.length - MAX_POINTS);
     }
 
     chart.update('none');
 
-    const now = new Date();
-    document.getElementById('last-update').innerText =
-      'LAST UPDATE: ' + now.toLocaleTimeString('en-GB');
+    if (lastValidTimestamp) {
+      const ts = new Date(lastValidTimestamp);
+      document.getElementById('last-update').innerText =
+        'LAST SENSOR UPDATE: ' + ts.toLocaleString('en-GB');
+    } else {
+      document.getElementById('last-update').innerText =
+        'LAST SENSOR UPDATE: No timestamp found';
+    }
 
     console.log('Loaded from VM:', labels.length, 'points');
   } catch (err) {
