@@ -24,7 +24,7 @@ function draw() {
     updateTime();
 
     if (temp > thresholdTemp && humidity < thresholdHumidity) {
-        glowAlpha = lerp(glowAlpha, 255, 0.05);
+        glowAlpha = 255;
 
         if (startTime === 0) {
             startTime = millis();
@@ -34,7 +34,7 @@ function draw() {
             setAlarmState(true);
         }
     } else {
-        glowAlpha = lerp(glowAlpha, 0, 0.1);
+        glowAlpha = 0;
         startTime = 0;
         setAlarmState(false);
     }

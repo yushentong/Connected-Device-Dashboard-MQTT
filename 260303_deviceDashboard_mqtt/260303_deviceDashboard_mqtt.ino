@@ -24,9 +24,12 @@ const char topic[] = "shentong/shtc3";
 String deviceName = "SHTC3";
 
 // Interval between messages (milliseconds)
-int interval = 10000;
+int intervalSending = 10000;
 unsigned long lastSend = 0;
-
+unsigned long lastSense = 0;
+bool wasWarning = false;
+int thresholdTemp = 40.0;
+int thresholdHumidity = 25.0;
 
 // Wifi Fall back
 
@@ -156,7 +159,7 @@ void loop() {
 
 
   // Send sensor data at specified interval
-  if (millis() - lastSend > interval) {
+  if (millis() - lastSense > 1000) {
 
     sensors_event_t humidity, temp;
 
@@ -165,12 +168,18 @@ void loop() {
     float t = temp.temperature;
     float h = humidity.relative_humidity;
 
+    bool isWarning = false;
+
 
     // LED threshold condition
-    if (t >= 40.0 && h <= 25.0) {
+    if (t >= thresholdTemp && h <= thresholdHumidity) {
       digitalWrite(2, HIGH);
+      intervalSending = 10000;
+      isWarning = true;
     } else {
       digitalWrite(2, LOW);
+      intervalSending = 60000;
+      isWarning = false;
     }
 
 
@@ -183,14 +192,19 @@ void loop() {
 
 
     // Publish MQTT message
-    mqttClient.beginMessage(topic);
-    mqttClient.print(message);
-    mqttClient.endMessage();
+    if (lastSend == 0 || millis() - lastSend > intervalSending || isWarning != wasWarning) {
+      mqttClient.beginMessage(topic);
+      mqttClient.print(message);
+      mqttClient.endMessage();
 
-    Serial.print("Published: ");
-    Serial.println(message);
+      Serial.print("Published: ");
+      Serial.println(message);
 
-    lastSend = millis();
+      lastSend = millis();
+    }
+
+    wasWarning = isWarning;
+    lastSense = millis();
   }
 }
 
