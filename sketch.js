@@ -8,10 +8,15 @@ const thresholdTemp = 40;
 const thresholdHumidity = 25;
 const alertDelay = 3000;
 
+const API_URL = "https://api.shentongcreates.com/latest";
+
 function setup() {
     let canvas = createCanvas(windowWidth, windowHeight * 0.8);
     canvas.parent('pan-container');
     canvas.style('z-index', '1');
+
+    fetchLatestMessage();
+    setInterval(fetchLatestMessage, 3000);
 }
 
 function draw() {
@@ -37,54 +42,57 @@ function draw() {
     if (glowAlpha > 0) {
         drawGlow(width * 0.7, height * 0.45, 500);
     }
+
     drawPan(width * 0.7, height * 0.45);
 }
 
-// ---- MQTT settings (browser uses WebSocket) ----
-const brokerUrl = 'wss://tigoe.net/mqtt'; 
-const mqttOptions = {
-  clean: true,
-  connectTimeout: 10_000,
-  clientId: 'web-' + Math.floor(Math.random() * 1_000_000),
-  username: 'conndev',
-  password: 'b4s1l!'
-};
+async function fetchLatestMessage() {
+    try {
+        const response = await fetch(API_URL, { cache: 'no-store' });
+        const items = await response.json();
 
-// IMPORTANT: topic must match Arduino publish topic
-const topic = 'shentong/shtc3';
+        if (!Array.isArray(items) || items.length === 0) {
+            console.log('No data returned from API');
+            return;
+        }
 
-const mqttClient = mqtt.connect(brokerUrl, mqttOptions);
+        const lastItem = items[items.length - 1];
 
-mqttClient.on('connect', () => {
-  console.log('MQTT connected');
-  mqttClient.subscribe(topic, (err) => {
-    if (err) console.error('Subscribe error:', err);
-    else console.log('Subscribed:', topic);
-  });
-});
+        if (!lastItem || !lastItem.message) {
+            console.log('Last item has no message');
+            return;
+        }
 
-mqttClient.on('message', (t, payload) => {
-  try {
-    const data = JSON.parse(payload.toString());
+        const data = JSON.parse(lastItem.message);
 
-    // update globals used by draw()
-    temp = Number(data.temperature);
-    humidity = Number(data.humidity);
+        const newTemp = Number(data.temperature);
+        const newHumidity = Number(data.humidity);
 
-    // update UI text
-    document.getElementById('temp-display').innerText = temp.toFixed(1);
-    document.getElementById('hum-display').innerText = humidity.toFixed(0);
+        if (!Number.isFinite(newTemp) || !Number.isFinite(newHumidity)) {
+            console.log('Invalid temperature/humidity in latest message');
+            return;
+        }
 
-    // show last received time
-    const now = new Date();
-    document.getElementById('last-update').innerText = 'LAST UPDATE: ' + now.toLocaleTimeString('en-GB');
-  } catch (e) {
-    console.error('Bad MQTT payload:', payload.toString());
-  }
-});
+        temp = newTemp;
+        humidity = newHumidity;
 
-mqttClient.on('error', (err) => console.error('MQTT error:', err));
-mqttClient.on('close', () => console.log('MQTT closed'));
+        document.getElementById('temp-display').innerText = temp.toFixed(1);
+        document.getElementById('hum-display').innerText = humidity.toFixed(0);
+
+        if (lastItem.timestamp) {
+            const ts = new Date(lastItem.timestamp);
+            document.getElementById('last-update').innerText =
+                'LAST UPDATE: ' + ts.toLocaleTimeString('en-GB');
+        } else {
+            document.getElementById('last-update').innerText =
+                'LAST UPDATE: No timestamp found';
+        }
+
+        console.log('Latest API message:', lastItem);
+    } catch (err) {
+        console.error('Error fetching latest message:', err);
+    }
+}
 
 function updateTime() {
     let h = hour();
@@ -127,5 +135,5 @@ function drawPan(x, y) {
 }
 
 function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
+    resizeCanvas(windowWidth, windowHeight * 0.8);
 }
