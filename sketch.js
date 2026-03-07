@@ -2,13 +2,13 @@ let temp = 0;
 let humidity = 0;
 let glowAlpha = 0;
 let startTime = 0;
-let isWarning = false;
 
 const thresholdTemp = 40;
 const thresholdHumidity = 25;
 const alertDelay = 3000;
 
 const API_URL = "https://api.shentongcreates.com/latest";
+const OFFLINE_THRESHOLD_MS = 90 * 1000; // 1.5 minutes
 
 function setup() {
     let canvas = createCanvas(windowWidth, windowHeight * 0.8);
@@ -53,13 +53,17 @@ async function fetchLatestMessage() {
 
         if (!Array.isArray(items) || items.length === 0) {
             console.log('No data returned from API');
+            setDeviceStatus(false);
             return;
         }
 
-        const lastItem = items[items.length - 1];
+        const lastItem = items
+            .filter(item => item.timestamp && item.message)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
 
-        if (!lastItem || !lastItem.message) {
-            console.log('Last item has no message');
+        if (!lastItem) {
+            console.log('No valid latest item found');
+            setDeviceStatus(false);
             return;
         }
 
@@ -70,6 +74,7 @@ async function fetchLatestMessage() {
 
         if (!Number.isFinite(newTemp) || !Number.isFinite(newHumidity)) {
             console.log('Invalid temperature/humidity in latest message');
+            setDeviceStatus(false);
             return;
         }
 
@@ -81,16 +86,40 @@ async function fetchLatestMessage() {
 
         if (lastItem.timestamp) {
             const ts = new Date(lastItem.timestamp);
+            const now = new Date();
+            const ageMs = now - ts;
+
             document.getElementById('last-update').innerText =
                 'LAST UPDATE: ' + ts.toLocaleTimeString('en-GB');
+
+            if (ageMs > OFFLINE_THRESHOLD_MS) {
+                setDeviceStatus(false);
+            } else {
+                setDeviceStatus(true);
+            }
         } else {
             document.getElementById('last-update').innerText =
                 'LAST UPDATE: No timestamp found';
+            setDeviceStatus(false);
         }
 
         console.log('Latest API message:', lastItem);
     } catch (err) {
         console.error('Error fetching latest message:', err);
+        setDeviceStatus(false);
+    }
+}
+
+function setDeviceStatus(isOnline) {
+    const el = document.getElementById('device-status');
+    if (!el) return;
+
+    if (isOnline) {
+        el.innerText = 'DEVICE STATUS: ON';
+        el.style.color = 'limegreen';
+    } else {
+        el.innerText = 'DEVICE STATUS: OFF';
+        el.style.color = 'red';
     }
 }
 

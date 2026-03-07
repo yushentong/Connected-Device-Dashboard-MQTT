@@ -23,7 +23,13 @@
             <h1 class="value"><span id="hum-display">--</span>% rH</h1>
         </div>
 
-        <p id="last-update" style="font-size:13px; color:#aaa; margin:0 0 40px 0; letter-spacing:1px;">LAST UPDATE: --:--:--</p>
+        <div id="device-status" style="font-size:13px; margin:0 0 10px 0; letter-spacing:1px; color:limegreen;">
+            DEVICE STATUS: ON
+        </div>
+
+        <p id="last-update" style="font-size:13px; color:#aaa; margin:0 0 40px 0; letter-spacing:1px;">
+            LAST UPDATE: --:--:--
+        </p>
 
         <a href="chart.html" id="chart-entrance">
             <div class="icon-circle">
@@ -38,11 +44,8 @@
 
     <div id="alarm-status">🚨</div>
     <div id="pan-container">
-        <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
         <script src="sketch.js"></script>
     </div>
-
-
 </body>
 
 </html>
